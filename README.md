@@ -28,6 +28,28 @@ PageIndex builds semantic tree structures from documents without embeddings or v
 - **Repository Indexing** - Generate semantic summaries for codebases
 - **Format Conversion** - Convert DOCX, PPTX, HTML, and images via [docling](https://github.com/DS4SD/docling)
 
+## When NOT to Use PageIndex
+
+PageIndex excels at structured, hierarchical documents but isn't the right tool for every use case:
+
+| Use Case | Why PageIndex May Not Be Ideal | Better Alternative |
+|----------|-------------------------------|-------------------|
+| **Short documents** (< 10 pages) | Overhead of tree construction isn't worth it | Direct LLM context or simple chunking |
+| **Unstructured content** (chat logs, social media) | No inherent hierarchy to extract | Vector search with semantic embeddings |
+| **High-volume real-time queries** | LLM reasoning per query adds latency | Pre-computed vector indices |
+| **Keyword/exact match search** | PageIndex focuses on semantic structure | Full-text search (Elasticsearch, etc.) |
+| **Frequently updated documents** | Tree must be regenerated on each change | Incremental vector indexing |
+| **Multi-document corpus search** | Designed for single-document navigation | Vector DB with cross-document retrieval |
+| **Cost-sensitive applications** | Each indexing run uses LLM API calls | One-time embedding generation |
+
+### PageIndex Shines When:
+
+- Documents have **clear hierarchical structure** (reports, manuals, textbooks, legal docs)
+- You need **explainable, traceable retrieval** with section/page references
+- **Accuracy matters more than speed** (financial analysis, compliance, research)
+- Documents are **long** (50+ pages) where vector chunking loses context
+- You want **human-like navigation** through complex documents
+
 ## Installation
 
 Clone the repository and install in editable mode:
