@@ -68,6 +68,7 @@ def get_page_tokens(
     else:
         raise ValueError(f"Unsupported PDF parser: {pdf_parser}")
 
+
 def get_text_of_pages(
     pdf_path: str | Path,
     start_page: int,

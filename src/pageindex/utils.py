@@ -78,8 +78,7 @@ def get_pdf_name(pdf_path: str | Path | BytesIO) -> str:
             pdf_name = meta.title if meta and meta.title else "Untitled"
             return sanitize_filename(pdf_name)
         finally:
-
-            if hasattr(pdf_reader, 'stream') and hasattr(pdf_reader.stream, 'close'):
+            if hasattr(pdf_reader, "stream") and hasattr(pdf_reader.stream, "close"):
                 pdf_reader.stream.close()
     return "Unknown"
 
@@ -87,7 +86,7 @@ def get_pdf_name(pdf_path: str | Path | BytesIO) -> str:
 def get_pdf_title(pdf_path: str | Path) -> str:
     """Extract PDF title from metadata."""
     if isinstance(pdf_path, (str, Path)):
-        with open(pdf_path, 'rb') as f:
+        with open(pdf_path, "rb") as f:
             pdf_reader = PyPDF2.PdfReader(f)
             meta = pdf_reader.metadata
             return meta.title if meta and meta.title else "Untitled"
@@ -97,7 +96,7 @@ def get_pdf_title(pdf_path: str | Path) -> str:
             meta = pdf_reader.metadata
             return meta.title if meta and meta.title else "Untitled"
         finally:
-            if hasattr(pdf_reader, 'stream') and hasattr(pdf_reader.stream, 'close'):
+            if hasattr(pdf_reader, "stream") and hasattr(pdf_reader.stream, "close"):
                 pdf_reader.stream.close()
 
 
