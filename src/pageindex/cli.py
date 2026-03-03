@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.console import Console
@@ -33,7 +33,7 @@ def version_callback(value: bool) -> None:
 @app.callback()
 def main(
     version: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--version",
             "-v",
@@ -51,19 +51,21 @@ def main(
 def pdf(
     path: Annotated[Path, typer.Argument(help="Path to PDF file")],
     output: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option("--output", "-o", help="Output JSON file path"),
     ] = None,
     project_id: Annotated[
-        Optional[str],
-        typer.Option("--project-id", "-p", help="Google Cloud project ID", envvar="PAGEINDEX_PROJECT_ID"),
+        str | None,
+        typer.Option(
+            "--project-id", "-p", help="Google Cloud project ID", envvar="PAGEINDEX_PROJECT_ID"
+        ),
     ] = None,
     location: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--location", "-l", help="Vertex AI location"),
     ] = "us-central1",
     model: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--model", "-m", help="Gemini model to use"),
     ] = "gemini-1.5-flash",
     toc_check_pages: Annotated[
@@ -151,19 +153,21 @@ def pdf(
 def md(
     path: Annotated[Path, typer.Argument(help="Path to Markdown file")],
     output: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option("--output", "-o", help="Output JSON file path"),
     ] = None,
     project_id: Annotated[
-        Optional[str],
-        typer.Option("--project-id", "-p", help="Google Cloud project ID", envvar="PAGEINDEX_PROJECT_ID"),
+        str | None,
+        typer.Option(
+            "--project-id", "-p", help="Google Cloud project ID", envvar="PAGEINDEX_PROJECT_ID"
+        ),
     ] = None,
     location: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--location", "-l", help="Vertex AI location"),
     ] = "us-central1",
     model: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--model", "-m", help="Gemini model to use"),
     ] = "gemini-1.5-flash",
     thinning: Annotated[
@@ -196,8 +200,8 @@ def md(
     ] = False,
 ) -> None:
     """Process a Markdown document and generate tree structure."""
-    from pageindex.markdown.processor import md_to_tree
     from pageindex.config import PageIndexConfig
+    from pageindex.markdown.processor import md_to_tree
 
     if not path.exists():
         console.print(f"[red]Error: File not found: {path}[/red]")
@@ -254,19 +258,21 @@ def md(
 def folder(
     path: Annotated[Path, typer.Argument(help="Path to folder containing documents")],
     output: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option("--output", "-o", help="Output directory for JSON files"),
     ] = None,
     project_id: Annotated[
-        Optional[str],
-        typer.Option("--project-id", "-p", help="Google Cloud project ID", envvar="PAGEINDEX_PROJECT_ID"),
+        str | None,
+        typer.Option(
+            "--project-id", "-p", help="Google Cloud project ID", envvar="PAGEINDEX_PROJECT_ID"
+        ),
     ] = None,
     location: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--location", "-l", help="Vertex AI location"),
     ] = "us-central1",
     model: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--model", "-m", help="Gemini model to use"),
     ] = "gemini-1.5-flash",
     max_concurrent: Annotated[
@@ -278,7 +284,7 @@ def folder(
         typer.Option("--convert/--no-convert", help="Convert unsupported formats with docling"),
     ] = True,
     docling_serve_url: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--docling-serve-url",
             help="URL of docling-serve API (e.g., http://localhost:5001)",
@@ -287,7 +293,9 @@ def folder(
     ] = None,
     docling_serve_timeout: Annotated[
         int,
-        typer.Option("--docling-serve-timeout", help="Timeout for docling-serve API calls (seconds)"),
+        typer.Option(
+            "--docling-serve-timeout", help="Timeout for docling-serve API calls (seconds)"
+        ),
     ] = 300,
     add_node_id: Annotated[
         bool,
@@ -307,21 +315,22 @@ def folder(
     ] = False,
 ) -> None:
     """Process all documents in a folder.
-    
+
     Supports PDF and Markdown natively. Other formats (DOCX, PPTX, HTML, etc.)
     are converted to Markdown using docling if --convert is enabled.
-    
+
     Conversion priority:
     1. If --docling-serve-url is set, use remote docling-serve API
     2. Else if local docling is installed, use local docling
     3. Else skip unsupported formats
-    
+
     Install docling support with: pip install pageindex[docling]
     Or run docling-serve: docker run -p 5001:5001 quay.io/docling-project/docling-serve
     """
-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+    from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
     from rich.table import Table
-    from pageindex.batch import process_folder_sync, get_supported_files
+
+    from pageindex.batch import get_supported_files, process_folder_sync
 
     if not path.exists():
         console.print(f"[red]Error: Folder not found: {path}[/red]")
@@ -336,29 +345,53 @@ def folder(
         raise typer.Exit(1)
 
     files = get_supported_files(path)
-    
+
     table = Table(title="Files Found")
     table.add_column("Type", style="cyan")
     table.add_column("Count", justify="right")
     table.add_column("Files", style="dim")
-    
-    table.add_row("PDF", str(len(files["pdf"])), ", ".join(f.name for f in files["pdf"][:3]) + ("..." if len(files["pdf"]) > 3 else ""))
-    table.add_row("Markdown", str(len(files["markdown"])), ", ".join(f.name for f in files["markdown"][:3]) + ("..." if len(files["markdown"]) > 3 else ""))
-    table.add_row("Convertible", str(len(files["docling"])), ", ".join(f.name for f in files["docling"][:3]) + ("..." if len(files["docling"]) > 3 else ""))
-    table.add_row("Unsupported", str(len(files["unsupported"])), ", ".join(f.name for f in files["unsupported"][:3]) + ("..." if len(files["unsupported"]) > 3 else ""))
-    
+
+    table.add_row(
+        "PDF",
+        str(len(files["pdf"])),
+        ", ".join(f.name for f in files["pdf"][:3]) + ("..." if len(files["pdf"]) > 3 else ""),
+    )
+    table.add_row(
+        "Markdown",
+        str(len(files["markdown"])),
+        ", ".join(f.name for f in files["markdown"][:3])
+        + ("..." if len(files["markdown"]) > 3 else ""),
+    )
+    table.add_row(
+        "Convertible",
+        str(len(files["docling"])),
+        ", ".join(f.name for f in files["docling"][:3])
+        + ("..." if len(files["docling"]) > 3 else ""),
+    )
+    table.add_row(
+        "Unsupported",
+        str(len(files["unsupported"])),
+        ", ".join(f.name for f in files["unsupported"][:3])
+        + ("..." if len(files["unsupported"]) > 3 else ""),
+    )
+
     console.print(table)
     console.print()
 
     total = len(files["pdf"]) + len(files["markdown"])
     if convert_unsupported:
         total += len(files["docling"])
-    
+
     if total == 0:
         console.print("[yellow]No supported files found in folder.[/yellow]")
         raise typer.Exit(0)
 
-    console.print(Panel(f"Processing [bold]{total}[/bold] documents from: [bold]{path}[/bold]", title="PageIndex Batch"))
+    console.print(
+        Panel(
+            f"Processing [bold]{total}[/bold] documents from: [bold]{path}[/bold]",
+            title="PageIndex Batch",
+        )
+    )
 
     config = PageIndexConfig(
         project_id=project_id,
@@ -381,12 +414,12 @@ def folder(
             console=console,
         ) as progress:
             task = progress.add_task("Processing documents...", total=total)
-            
+
             def on_progress(file_name: str, status: str) -> None:
                 if status == "done":
                     progress.advance(task)
                 progress.update(task, description=f"[cyan]{file_name}[/cyan]: {status}")
-            
+
             results = process_folder_sync(
                 folder=path,
                 config=config,
@@ -396,17 +429,17 @@ def folder(
             )
 
         console.print()
-        
+
         stats = results["statistics"]
         result_table = Table(title="Results")
         result_table.add_column("Status", style="bold")
         result_table.add_column("Count", justify="right")
-        
+
         result_table.add_row("[green]Success[/green]", str(stats["success"]))
         result_table.add_row("[red]Failed[/red]", str(stats["failed"]))
         result_table.add_row("[yellow]Skipped[/yellow]", str(stats["skipped"]))
         result_table.add_row("[bold]Total[/bold]", str(stats["total"]))
-        
+
         console.print(result_table)
 
         if results.get("conversion_method"):
@@ -429,19 +462,21 @@ def folder(
 def repo(
     path: Annotated[Path, typer.Argument(help="Path to repository root")] = Path("."),
     output: Annotated[
-        Optional[Path],
+        Path | None,
         typer.Option("--output", "-o", help="Output JSON file path"),
     ] = None,
     project_id: Annotated[
-        Optional[str],
-        typer.Option("--project-id", "-p", help="Google Cloud project ID", envvar="PAGEINDEX_PROJECT_ID"),
+        str | None,
+        typer.Option(
+            "--project-id", "-p", help="Google Cloud project ID", envvar="PAGEINDEX_PROJECT_ID"
+        ),
     ] = None,
     location: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--location", "-l", help="Vertex AI location"),
     ] = "us-central1",
     model: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--model", "-m", help="Gemini model to use"),
     ] = "gemini-1.5-flash",
     add_summaries: Annotated[
@@ -453,11 +488,11 @@ def repo(
         typer.Option("--max-concurrent", "-c", help="Max concurrent LLM calls"),
     ] = 5,
     include: Annotated[
-        Optional[list[str]],
+        list[str] | None,
         typer.Option("--include", "-i", help="File patterns to include (can specify multiple)"),
     ] = None,
     exclude: Annotated[
-        Optional[list[str]],
+        list[str] | None,
         typer.Option("--exclude", "-e", help="Patterns to exclude (can specify multiple)"),
     ] = None,
     max_depth: Annotated[
@@ -466,16 +501,19 @@ def repo(
     ] = 4,
 ) -> None:
     """Index a Git repository for semantic code search.
-    
+
     Scans the repository structure and generates summaries for each directory
     using LLM reasoning. The output can be used for semantic navigation and
     understanding of the codebase.
-    
+
     Default includes: *.py, *.js, *.ts, *.go, *.rs, *.java, *.md, etc.
     Default excludes: .git, node_modules, __pycache__, dist, build, etc.
     """
     from rich.table import Table
-    from pageindex.repo import index_repository_sync, DEFAULT_INCLUDE_PATTERNS, DEFAULT_EXCLUDE_PATTERNS
+
+    from pageindex.repo import (
+        index_repository_sync,
+    )
 
     if not path.exists():
         console.print(f"[red]Error: Path not found: {path}[/red]")
@@ -489,7 +527,9 @@ def repo(
 
     if add_summaries and not project_id:
         console.print("[yellow]Warning: --project-id not set. Summaries will be skipped.[/yellow]")
-        console.print("[dim]Set PAGEINDEX_PROJECT_ID or use --project-id to enable summaries.[/dim]")
+        console.print(
+            "[dim]Set PAGEINDEX_PROJECT_ID or use --project-id to enable summaries.[/dim]"
+        )
         add_summaries = False
 
     include_patterns = list(include) if include else None
@@ -529,10 +569,11 @@ def repo(
 
         if output is None:
             output = Path(f"./results/{path.name}_index.json")
-        
+
         output.parent.mkdir(parents=True, exist_ok=True)
-        
+
         import json
+
         with open(output, "w", encoding="utf-8") as f:
             json.dump(result, f, indent=2, ensure_ascii=False)
 
@@ -577,16 +618,16 @@ def display_repo_tree(structure: list[dict], max_depth: int = 4) -> None:
             node_id = node.get("node_id", "")
             summary = node.get("summary", "")
             file_count = len(node.get("files", []))
-            
+
             label_parts = []
             if node_id:
                 label_parts.append(f"[cyan]{node_id}[/cyan]")
             label_parts.append(f"[bold]{title}/[/bold]")
             if file_count:
                 label_parts.append(f"[dim]({file_count} files)[/dim]")
-            
+
             label = " ".join(label_parts)
-            
+
             if depth < max_depth:
                 branch = tree.add(label)
                 if summary:

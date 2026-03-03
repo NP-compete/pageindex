@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 def get_page_tokens(
     pdf_path: str | Path | BytesIO,
-    config: "PageIndexConfig | None" = None,
+    config: PageIndexConfig | None = None,
     pdf_parser: str = "PyMuPDF",
 ) -> list[tuple[str, int]]:
     """Extract pages with their text and token counts.
@@ -90,7 +90,9 @@ def get_text_of_pages(
         page = pdf_reader.pages[page_num]
         page_text = page.extract_text() or ""
         if tag:
-            text += f"<physical_index_{page_num + 1}>\n{page_text}\n</physical_index_{page_num + 1}>\n"
+            text += (
+                f"<physical_index_{page_num + 1}>\n{page_text}\n</physical_index_{page_num + 1}>\n"
+            )
         else:
             text += page_text
     return text

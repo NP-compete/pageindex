@@ -1,8 +1,22 @@
 # PageIndex
 
+[![CI](https://github.com/NP-compete/pageindex/actions/workflows/ci.yml/badge.svg)](https://github.com/NP-compete/pageindex/actions/workflows/ci.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+
 **Vectorless, reasoning-based RAG using hierarchical document indexing with Vertex AI**
 
+> *Why chunk and embed when you can reason and structure?*
+
 PageIndex builds semantic tree structures from documents without embeddings or vector databases. Instead of chunking and embedding, it uses LLM reasoning to extract hierarchical structure, making document navigation and retrieval more intuitive.
+
+<p align="center">
+  <img src="https://img.shields.io/badge/PDF-Supported-green" alt="PDF">
+  <img src="https://img.shields.io/badge/Markdown-Supported-green" alt="Markdown">
+  <img src="https://img.shields.io/badge/DOCX-Via%20Docling-blue" alt="DOCX">
+  <img src="https://img.shields.io/badge/Repository-Indexing-purple" alt="Repo">
+</p>
 
 ## Features
 
@@ -229,8 +243,12 @@ pageindex folder ./docs --convert
 
 ## License
 
-MIT
+MIT - see [LICENSE](LICENSE) for details.
+
+## Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ## Author
 
-Soham Dutta (sodutta@redhat.com)
+Soham Dutta ([@NP-compete](https://github.com/NP-compete))

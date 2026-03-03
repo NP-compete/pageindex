@@ -240,7 +240,7 @@ def create_clean_structure_for_description(structure: Any) -> Any:
             if key in structure:
                 clean_node[key] = structure[key]
 
-        if "nodes" in structure and structure["nodes"]:
+        if structure.get("nodes"):
             clean_node["nodes"] = create_clean_structure_for_description(structure["nodes"])
 
         return clean_node
@@ -267,10 +267,12 @@ def validate_and_truncate_physical_indices(
             original_index = item["physical_index"]
             if original_index > max_allowed_page:
                 item["physical_index"] = None
-                truncated_items.append({
-                    "title": item.get("title", "Unknown"),
-                    "original_index": original_index,
-                })
+                truncated_items.append(
+                    {
+                        "title": item.get("title", "Unknown"),
+                        "original_index": original_index,
+                    }
+                )
                 if logger:
                     logger.info(
                         f"Removed physical_index for '{item.get('title', 'Unknown')}' "

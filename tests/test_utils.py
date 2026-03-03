@@ -1,13 +1,11 @@
 """Tests for utility functions."""
 
-import pytest
-
 from pageindex.utils import (
+    convert_page_to_int,
+    convert_physical_index_to_int,
     extract_json,
     get_json_content,
     sanitize_filename,
-    convert_physical_index_to_int,
-    convert_page_to_int,
 )
 
 

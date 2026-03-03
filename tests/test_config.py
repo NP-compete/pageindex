@@ -1,8 +1,6 @@
 """Tests for configuration."""
 
-import pytest
-
-from pageindex.config import PageIndexConfig, ConfigLoader
+from pageindex.config import ConfigLoader, PageIndexConfig
 
 
 class TestPageIndexConfig:

@@ -8,7 +8,7 @@ import time
 from typing import TYPE_CHECKING
 
 import vertexai
-from vertexai.generative_models import GenerativeModel, GenerationConfig
+from vertexai.generative_models import GenerationConfig, GenerativeModel
 
 if TYPE_CHECKING:
     from pageindex.config import PageIndexConfig

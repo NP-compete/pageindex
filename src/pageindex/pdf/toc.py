@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import asyncio
-import copy
 import json
 import math
 import re
 from typing import TYPE_CHECKING, Any
 
 from pageindex.llm import LLMClient
-from pageindex.utils import extract_json, get_json_content, convert_physical_index_to_int, convert_page_to_int
+from pageindex.utils import (
+    convert_page_to_int,
+    extract_json,
+    get_json_content,
+)
 
 if TYPE_CHECKING:
     from pageindex.config import PageIndexConfig
@@ -40,7 +43,7 @@ Please note: abstract, summary, notation list, figure list, table list, etc. are
 def find_toc_pages(
     start_page_index: int,
     page_list: list[tuple[str, int]],
-    config: "PageIndexConfig",
+    config: PageIndexConfig,
     llm: LLMClient,
     logger: Any = None,
 ) -> list[int]:
@@ -209,7 +212,8 @@ def toc_index_extractor(
 ) -> list[dict]:
     """Extract physical page indices for TOC items."""
     print("Extracting TOC indices...")
-    prompt = """
+    prompt = (
+        """
 You are given a table of contents in JSON format and several pages of a document.
 Your job is to add the physical_index to the table of contents.
 
@@ -232,7 +236,11 @@ If the section is not in the provided pages, do not add the physical_index.
 Directly return the final JSON structure. Do not output anything else.
 
 Table of contents:
-""" + str(toc) + "\n\nDocument pages:\n" + content
+"""
+        + str(toc)
+        + "\n\nDocument pages:\n"
+        + content
+    )
 
     response = llm.chat(prompt)
     return extract_json(response)
@@ -286,11 +294,13 @@ def extract_matching_page_pairs(
             if phy_item.get("title") == page_item.get("title"):
                 physical_index = phy_item.get("physical_index")
                 if physical_index is not None and int(physical_index) >= start_page_index:
-                    pairs.append({
-                        "title": phy_item.get("title"),
-                        "page": page_item.get("page"),
-                        "physical_index": physical_index,
-                    })
+                    pairs.append(
+                        {
+                            "title": phy_item.get("title"),
+                            "page": page_item.get("page"),
+                            "physical_index": physical_index,
+                        }
+                    )
     return pairs
 
 
@@ -327,7 +337,7 @@ def add_page_offset_to_toc_json(data: list[dict], offset: int) -> list[dict]:
 
 def check_toc(
     page_list: list[tuple[str, int]],
-    config: "PageIndexConfig",
+    config: PageIndexConfig,
     llm: LLMClient,
 ) -> dict[str, Any]:
     """Check for and extract table of contents from document."""

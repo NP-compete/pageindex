@@ -1,18 +1,15 @@
 """Tests for tree operations."""
 
-import pytest
-
 from pageindex.tree import (
-    write_node_id,
-    get_nodes,
-    structure_to_list,
+    add_preface_if_needed,
+    format_structure,
     get_leaf_nodes,
+    get_nodes,
     is_leaf_node,
     list_to_tree,
-    add_preface_if_needed,
-    post_processing,
     remove_page_number,
-    format_structure,
+    structure_to_list,
+    write_node_id,
 )
 
 
@@ -117,7 +114,7 @@ class TestGetLeafNodes:
         }
         leaves = get_leaf_nodes(structure)
         assert len(leaves) == 2
-        titles = [l["title"] for l in leaves]
+        titles = [leaf["title"] for leaf in leaves]
         assert "Leaf 1" in titles
         assert "Leaf 2" in titles
 

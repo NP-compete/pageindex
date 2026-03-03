@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 import PyPDF2
 
 if TYPE_CHECKING:
-    from pageindex.config import PageIndexConfig
+    pass
 
 logger = logging.getLogger(__name__)
 

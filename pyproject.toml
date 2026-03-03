@@ -26,7 +26,7 @@ classifiers = [
 ]
 readme = "README.md"
 authors = [
-    { name = "Soham Dutta", email = "sodutta@redhat.com" },
+    { name = "Soham Dutta" },
 ]
 requires-python = ">=3.10,<4.0"
 dependencies = [
@@ -43,8 +43,10 @@ dependencies = [
 ]
 
 [project.urls]
-homepage = "https://gitlab.corp.redhat.com/sodutta/pageindex"
-repository = "https://gitlab.corp.redhat.com/sodutta/pageindex"
+homepage = "https://github.com/NP-compete/pageindex"
+repository = "https://github.com/NP-compete/pageindex"
+documentation = "https://github.com/NP-compete/pageindex#readme"
+issues = "https://github.com/NP-compete/pageindex/issues"
 
 [project.scripts]
 pageindex = "pageindex.cli:app"

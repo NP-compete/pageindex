@@ -15,7 +15,6 @@ from pageindex.llm import LLMClient
 from pageindex.pdf.parser import (
     add_node_text,
     get_page_tokens,
-    get_text_of_pdf_pages_with_labels,
 )
 from pageindex.pdf.toc import (
     add_page_offset_to_toc_json,
@@ -33,9 +32,9 @@ from pageindex.tree import (
     create_clean_structure_for_description,
     post_processing,
     remove_structure_text,
+    structure_to_list,
     validate_and_truncate_physical_indices,
     write_node_id,
-    structure_to_list,
 )
 from pageindex.utils import (
     JsonLogger,
@@ -100,11 +99,7 @@ def page_index(
     Returns:
         Dictionary with doc_name, optional doc_description, and structure
     """
-    user_opt = {
-        arg: value
-        for arg, value in locals().items()
-        if arg != "doc" and value is not None
-    }
+    user_opt = {arg: value for arg, value in locals().items() if arg != "doc" and value is not None}
     config = ConfigLoader().load(user_opt)
     return page_index_main(doc, config)
 
@@ -207,8 +202,7 @@ async def tree_parser(
 
     toc_tree = post_processing(valid_toc_items, len(page_list))
     tasks = [
-        process_large_node_recursively(node, page_list, config, llm, logger)
-        for node in toc_tree
+        process_large_node_recursively(node, page_list, config, llm, logger) for node in toc_tree
     ]
     await asyncio.gather(*tasks)
 
@@ -252,11 +246,13 @@ async def meta_processor(
         page_list, toc_with_page_number, start_index, llm
     )
 
-    logger.info({
-        "mode": mode,
-        "accuracy": accuracy,
-        "incorrect_results": incorrect_results,
-    })
+    logger.info(
+        {
+            "mode": mode,
+            "accuracy": accuracy,
+            "incorrect_results": incorrect_results,
+        }
+    )
 
     if accuracy == 1.0 and len(incorrect_results) == 0:
         return toc_with_page_number
@@ -391,7 +387,9 @@ def process_no_toc(
 
     toc_with_page_number = generate_toc_init(group_texts[0], llm)
     for group_text in group_texts[1:]:
-        toc_with_page_number_additional = generate_toc_continue(toc_with_page_number, group_text, llm)
+        toc_with_page_number_additional = generate_toc_continue(
+            toc_with_page_number, group_text, llm
+        )
         toc_with_page_number.extend(toc_with_page_number_additional)
     logger.info(f"generate_toc: {toc_with_page_number}")
 
@@ -404,7 +402,8 @@ def process_no_toc(
 def generate_toc_init(part: str, llm: LLMClient) -> list[dict]:
     """Generate initial TOC from document text."""
     print("Generating initial TOC...")
-    prompt = """
+    prompt = (
+        """
 You are an expert in extracting hierarchical tree structure.
 Your task is to generate the tree structure of the document.
 
@@ -430,7 +429,9 @@ The response should be in the following format:
 Directly return the final JSON structure. Do not output anything else.
 
 Given text:
-""" + part
+"""
+        + part
+    )
 
     response, finish_reason = llm.chat_with_finish_reason(prompt)
 
@@ -443,7 +444,8 @@ Given text:
 def generate_toc_continue(toc_content: list[dict], part: str, llm: LLMClient) -> list[dict]:
     """Continue generating TOC from additional document text."""
     print("Continuing TOC generation...")
-    prompt = """
+    prompt = (
+        """
 You are an expert in extracting hierarchical tree structure.
 You are given a tree structure of the previous part and the text of the current part.
 Your task is to continue the tree structure from the previous part to include the current part.
@@ -469,7 +471,11 @@ The response should be in the following format:
 Directly return the additional part of the final JSON structure. Do not output anything else.
 
 Given text:
-""" + part + "\n\nPrevious tree structure:\n" + json.dumps(toc_content, indent=2)
+"""
+        + part
+        + "\n\nPrevious tree structure:\n"
+        + json.dumps(toc_content, indent=2)
+    )
 
     response, finish_reason = llm.chat_with_finish_reason(prompt)
 
@@ -481,7 +487,8 @@ Given text:
 
 def add_page_number_to_toc(part: str, structure: list[dict], llm: LLMClient) -> list[dict]:
     """Add page numbers to TOC structure."""
-    prompt = """
+    prompt = (
+        """
 You are given a JSON structure of a document and a partial part of the document.
 Your task is to check if the title described in the structure starts in the partial document.
 
@@ -506,7 +513,11 @@ You need to fill the result of the current part, do not change the previous resu
 Directly return the final JSON structure. Do not output anything else.
 
 Current Partial Document:
-""" + part + "\n\nGiven Structure:\n" + json.dumps(structure, indent=2)
+"""
+        + part
+        + "\n\nGiven Structure:\n"
+        + json.dumps(structure, indent=2)
+    )
 
     current_json_raw = llm.chat(prompt)
     json_result = extract_json(current_json_raw)
@@ -595,8 +606,7 @@ async def verify_toc(
             indexed_sample_list.append(item_with_index)
 
     tasks = [
-        check_title_appearance(item, page_list, start_index, llm)
-        for item in indexed_sample_list
+        check_title_appearance(item, page_list, start_index, llm) for item in indexed_sample_list
     ]
     results = await asyncio.gather(*tasks)
 
@@ -693,11 +703,13 @@ async def fix_incorrect_toc(
             if 0 <= list_idx < len(toc_with_page_number):
                 toc_with_page_number[list_idx]["physical_index"] = result["physical_index"]
         else:
-            invalid_results.append({
-                "list_index": result["list_index"],
-                "title": result["title"],
-                "physical_index": result["physical_index"],
-            })
+            invalid_results.append(
+                {
+                    "list_index": result["list_index"],
+                    "title": result["title"],
+                    "physical_index": result["physical_index"],
+                }
+            )
 
     logger.info(f"invalid_results: {invalid_results}")
     return toc_with_page_number, invalid_results
@@ -733,7 +745,8 @@ async def fix_incorrect_toc_with_retries(
 
 def single_toc_item_index_fixer(section_title: str, content: str, llm: LLMClient) -> int | None:
     """Fix a single TOC item's page index."""
-    prompt = """
+    prompt = (
+        """
 You are given a section title and several pages of a document.
 Your job is to find the physical index of the start page of the section.
 
@@ -747,7 +760,11 @@ Reply in a JSON format:
 Directly return the final JSON structure. Do not output anything else.
 
 Section Title:
-""" + section_title + "\n\nDocument pages:\n" + content
+"""
+        + section_title
+        + "\n\nDocument pages:\n"
+        + content
+    )
 
     response = llm.chat(prompt)
     json_content = extract_json(response)
@@ -790,7 +807,10 @@ async def process_large_node_recursively(
             item for item in node_toc_tree if item.get("physical_index") is not None
         ]
 
-        if valid_node_toc_items and node["title"].strip() == valid_node_toc_items[0]["title"].strip():
+        if (
+            valid_node_toc_items
+            and node["title"].strip() == valid_node_toc_items[0]["title"].strip()
+        ):
             node["nodes"] = post_processing(valid_node_toc_items[1:], node["end_index"])
             node["end_index"] = (
                 valid_node_toc_items[1]["start_index"]
@@ -805,7 +825,7 @@ async def process_large_node_recursively(
                 else node["end_index"]
             )
 
-    if "nodes" in node and node["nodes"]:
+    if node.get("nodes"):
         tasks = [
             process_large_node_recursively(child_node, page_list, config, llm, logger)
             for child_node in node["nodes"]
@@ -820,7 +840,7 @@ async def generate_node_summary(node: dict, llm: LLMClient) -> str:
     prompt = f"""You are given a part of a document.
 Your task is to generate a description of what main points are covered in this partial document.
 
-Partial Document Text: {node['text']}
+Partial Document Text: {node["text"]}
 
 Directly return the description, do not include any other text."""
 

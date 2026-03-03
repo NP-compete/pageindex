@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import os
 import re
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -316,7 +315,7 @@ async def generate_node_summary(node: dict, llm: LLMClient) -> str:
     prompt = f"""You are given a part of a document.
 Your task is to generate a description of what main points are covered in this partial document.
 
-Partial Document Text: {node['text']}
+Partial Document Text: {node["text"]}
 
 Directly return the description, do not include any other text."""
 
@@ -459,7 +458,15 @@ async def md_to_tree(
         if if_add_node_text == "yes":
             tree_structure = format_structure(
                 tree_structure,
-                order=["title", "node_id", "summary", "prefix_summary", "text", "line_num", "nodes"],
+                order=[
+                    "title",
+                    "node_id",
+                    "summary",
+                    "prefix_summary",
+                    "text",
+                    "line_num",
+                    "nodes",
+                ],
             )
         else:
             tree_structure = format_structure(
