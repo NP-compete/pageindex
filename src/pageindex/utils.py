@@ -73,17 +73,31 @@ def get_pdf_name(pdf_path: str | Path | BytesIO) -> str:
         return Path(pdf_path).name
     elif isinstance(pdf_path, BytesIO):
         pdf_reader = PyPDF2.PdfReader(pdf_path)
-        meta = pdf_reader.metadata
-        pdf_name = meta.title if meta and meta.title else "Untitled"
-        return sanitize_filename(pdf_name)
+        try:
+            meta = pdf_reader.metadata
+            pdf_name = meta.title if meta and meta.title else "Untitled"
+            return sanitize_filename(pdf_name)
+        finally:
+            if hasattr(pdf_reader, "stream") and hasattr(pdf_reader.stream, "close"):
+                pdf_reader.stream.close()
     return "Unknown"
 
 
 def get_pdf_title(pdf_path: str | Path) -> str:
     """Extract PDF title from metadata."""
-    pdf_reader = PyPDF2.PdfReader(str(pdf_path))
-    meta = pdf_reader.metadata
-    return meta.title if meta and meta.title else "Untitled"
+    if isinstance(pdf_path, (str, Path)):
+        with open(pdf_path, "rb") as f:
+            pdf_reader = PyPDF2.PdfReader(f)
+            meta = pdf_reader.metadata
+            return meta.title if meta and meta.title else "Untitled"
+    else:
+        pdf_reader = PyPDF2.PdfReader(str(pdf_path))
+        try:
+            meta = pdf_reader.metadata
+            return meta.title if meta and meta.title else "Untitled"
+        finally:
+            if hasattr(pdf_reader, "stream") and hasattr(pdf_reader.stream, "close"):
+                pdf_reader.stream.close()
 
 
 def convert_physical_index_to_int(data: Any) -> Any:
