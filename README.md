@@ -11,6 +11,8 @@
 
 PageIndex builds semantic tree structures from documents without embeddings or vector databases. Instead of chunking and embedding, it uses LLM reasoning to extract hierarchical structure, making document navigation and retrieval more intuitive.
 
+> **Note:** This is an independent implementation inspired by the [PageIndex framework](https://pageindex.ai/) by [VectifyAI](https://github.com/VectifyAI/PageIndex). While the original uses OpenAI, this implementation uses **Google Vertex AI (Gemini)** and adds features like batch processing, repository indexing, and CLI tooling.
+
 <p align="center">
   <img src="https://img.shields.io/badge/PDF-Supported-green" alt="PDF">
   <img src="https://img.shields.io/badge/Markdown-Supported-green" alt="Markdown">
@@ -241,6 +243,11 @@ pageindex folder ./docs --convert
 - Google Cloud project with Vertex AI API enabled
 - Authentication via `gcloud auth application-default login` or service account
 
+## Related Projects
+
+- **[PageIndex by VectifyAI](https://github.com/VectifyAI/PageIndex)** - The original PageIndex framework for vectorless, reasoning-based RAG using OpenAI
+- **[PageIndex.ai](https://pageindex.ai/)** - Commercial platform for human-like document AI by VectifyAI
+
 ## License
 
 MIT - see [LICENSE](LICENSE) for details.
@@ -248,6 +255,10 @@ MIT - see [LICENSE](LICENSE) for details.
 ## Contributing
 
 Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## Acknowledgments
+
+This project is inspired by the [PageIndex framework](https://pageindex.ai/) developed by [VectifyAI](https://github.com/VectifyAI). Their research on vectorless, reasoning-based RAG demonstrates that **similarity ≠ relevance** — true document retrieval requires reasoning, not just embedding similarity.
 
 ## Author
 
