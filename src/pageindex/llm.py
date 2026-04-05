@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import random
 import time
 from typing import TYPE_CHECKING
 
@@ -41,6 +42,64 @@ class LLMClient:
         assert self._model is not None
         return self._model
 
+    def _call_with_retry(self, call_fn, max_retries: int = 10, delay: float = 1.0):
+        """Execute a callable with exponential backoff and jitter.
+
+        Args:
+            call_fn: A zero-argument callable that performs the API call.
+            max_retries: Maximum number of attempts before raising.
+            delay: Base delay in seconds for exponential backoff.
+
+        Returns:
+            The return value of call_fn on success.
+
+        Raises:
+            Exception: Re-raises the last exception if all retries are exhausted.
+        """
+        for attempt in range(max_retries):
+            try:
+                return call_fn()
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    wait = delay * (2 ** attempt) + random.uniform(0, 0.5)
+                    logger.warning(
+                        f"Attempt {attempt + 1}/{max_retries} failed: {e}. "
+                        f"Retrying in {wait:.2f}s..."
+                    )
+                    time.sleep(wait)
+                else:
+                    logger.error(f"Max retries reached. Last error: {e}")
+                    raise
+
+    async def _call_with_retry_async(self, call_fn, max_retries: int = 10, delay: float = 1.0):
+        """Execute an async callable with exponential backoff and jitter.
+
+        Args:
+            call_fn: A zero-argument async callable that performs the API call.
+            max_retries: Maximum number of attempts before raising.
+            delay: Base delay in seconds for exponential backoff.
+
+        Returns:
+            The return value of call_fn on success.
+
+        Raises:
+            Exception: Re-raises the last exception if all retries are exhausted.
+        """
+        for attempt in range(max_retries):
+            try:
+                return await call_fn()
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    wait = delay * (2 ** attempt) + random.uniform(0, 0.5)
+                    logger.warning(
+                        f"Async attempt {attempt + 1}/{max_retries} failed: {e}. "
+                        f"Retrying in {wait:.2f}s..."
+                    )
+                    await asyncio.sleep(wait)
+                else:
+                    logger.error(f"Max retries reached. Last error: {e}")
+                    raise
+
     def chat(
         self,
         prompt: str,
@@ -55,32 +114,23 @@ class LLMClient:
             max_output_tokens=8192,
         )
 
-        for attempt in range(max_retries):
-            try:
-                if chat_history:
-                    contents = []
-                    for msg in chat_history:
-                        role = "user" if msg["role"] == "user" else "model"
-                        contents.append({"role": role, "parts": [{"text": msg["content"]}]})
-                    contents.append({"role": "user", "parts": [{"text": prompt}]})
-                else:
-                    contents = prompt
+        if chat_history:
+            contents = []
+            for msg in chat_history:
+                role = "user" if msg["role"] == "user" else "model"
+                contents.append({"role": role, "parts": [{"text": msg["content"]}]})
+            contents.append({"role": "user", "parts": [{"text": prompt}]})
+        else:
+            contents = prompt
 
-                response = self.model.generate_content(
-                    contents,
-                    generation_config=generation_config,
-                )
-                return response.text
+        def call_fn():
+            response = self.model.generate_content(
+                contents,
+                generation_config=generation_config,
+            )
+            return response.text
 
-            except Exception as e:
-                logger.warning(f"Attempt {attempt + 1}/{max_retries} failed: {e}")
-                if attempt < max_retries - 1:
-                    time.sleep(1)
-                else:
-                    logger.error(f"Max retries reached for prompt: {prompt[:100]}...")
-                    raise
-
-        return "Error"
+        return self._call_with_retry(call_fn, max_retries=max_retries)
 
     def chat_with_finish_reason(
         self,
@@ -96,41 +146,30 @@ class LLMClient:
             max_output_tokens=8192,
         )
 
-        for attempt in range(max_retries):
-            try:
-                if chat_history:
-                    contents = []
-                    for msg in chat_history:
-                        role = "user" if msg["role"] == "user" else "model"
-                        contents.append({"role": role, "parts": [{"text": msg["content"]}]})
-                    contents.append({"role": "user", "parts": [{"text": prompt}]})
-                else:
-                    contents = prompt
+        if chat_history:
+            contents = []
+            for msg in chat_history:
+                role = "user" if msg["role"] == "user" else "model"
+                contents.append({"role": role, "parts": [{"text": msg["content"]}]})
+            contents.append({"role": "user", "parts": [{"text": prompt}]})
+        else:
+            contents = prompt
 
-                response = self.model.generate_content(
-                    contents,
-                    generation_config=generation_config,
-                )
+        def call_fn():
+            response = self.model.generate_content(
+                contents,
+                generation_config=generation_config,
+            )
+            finish_reason = "finished"
+            if response.candidates:
+                candidate = response.candidates[0]
+                if hasattr(candidate, "finish_reason"):
+                    fr = str(candidate.finish_reason)
+                    if "MAX_TOKENS" in fr or "LENGTH" in fr:
+                        finish_reason = "max_output_reached"
+            return response.text, finish_reason
 
-                finish_reason = "finished"
-                if response.candidates:
-                    candidate = response.candidates[0]
-                    if hasattr(candidate, "finish_reason"):
-                        fr = str(candidate.finish_reason)
-                        if "MAX_TOKENS" in fr or "LENGTH" in fr:
-                            finish_reason = "max_output_reached"
-
-                return response.text, finish_reason
-
-            except Exception as e:
-                logger.warning(f"Attempt {attempt + 1}/{max_retries} failed: {e}")
-                if attempt < max_retries - 1:
-                    time.sleep(1)
-                else:
-                    logger.error(f"Max retries reached for prompt: {prompt[:100]}...")
-                    raise
-
-        return "Error", "error"
+        return self._call_with_retry(call_fn, max_retries=max_retries)
 
     async def chat_async(
         self,
@@ -145,23 +184,14 @@ class LLMClient:
             max_output_tokens=8192,
         )
 
-        for attempt in range(max_retries):
-            try:
-                response = await self.model.generate_content_async(
-                    prompt,
-                    generation_config=generation_config,
-                )
-                return response.text
+        async def call_fn():
+            response = await self.model.generate_content_async(
+                prompt,
+                generation_config=generation_config,
+            )
+            return response.text
 
-            except Exception as e:
-                logger.warning(f"Async attempt {attempt + 1}/{max_retries} failed: {e}")
-                if attempt < max_retries - 1:
-                    await asyncio.sleep(1)
-                else:
-                    logger.error(f"Max retries reached for prompt: {prompt[:100]}...")
-                    raise
-
-        return "Error"
+        return await self._call_with_retry_async(call_fn, max_retries=max_retries)
 
     def count_tokens(self, text: str) -> int:
         """Count tokens in text using Vertex AI's token counter."""
