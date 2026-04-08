@@ -52,16 +52,18 @@ def get_page_tokens(
         else:
             raise ValueError(f"Invalid PDF path: {pdf_path}")
 
-        page_list = []
-        for page in doc:
-            page_text = page.get_text() or ""
-            if config:
-                token_length = count_tokens(config, page_text)
-            else:
-                token_length = len(page_text) // 4
-            page_list.append((page_text, token_length))
-        doc.close()
-        return page_list
+        try:
+            page_list = []
+            for page in doc:
+                page_text = page.get_text() or ""
+                if config:
+                    token_length = count_tokens(config, page_text)
+                else:
+                    token_length = len(page_text) // 4
+                page_list.append((page_text, token_length))
+            return page_list
+        finally:
+            doc.close()
 
     else:
         raise ValueError(f"Unsupported PDF parser: {pdf_parser}")
